@@ -26,12 +26,12 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--deep);color:var(--moon);font-family:var(--f);-webkit-text-size-adjust:100%}
-body{overscroll-behavior:none}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--deep);color:var(--moon);font-family:var(--f);-webkit-text-size-adjust:100%}
+body{overscroll-behavior:none;position:fixed;inset:0}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible,label:focus-visible{outline:2px solid var(--eye);outline-offset:2px}
 
-#mapwrap{position:fixed;inset:0 0 auto 0;height:58svh;z-index:1}
+#mapwrap{position:fixed;inset:0;z-index:1}
 #map{position:absolute;inset:0;background:#0b1020}
 .leaflet-container{font-family:var(--f)}
 .leaflet-control-attribution{background:rgba(13,18,36,.7)!important;color:var(--muted)!important;font-size:10px}
@@ -43,19 +43,27 @@ button:focus-visible,input:focus-visible,label:focus-visible{outline:2px solid v
 .seg{display:flex;background:rgba(20,27,51,.82);border:1px solid var(--line);border-radius:999px;padding:3px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .seg button{border:0;background:none;padding:6px 11px;border-radius:999px;font-size:13px;font-weight:600;color:var(--muted)}
 .seg button[aria-pressed=true]{background:var(--eye);color:var(--deep)}
-.mapctl{position:absolute;z-index:500;left:12px;right:12px;bottom:12px;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
-.mapctl>*{pointer-events:auto}
+.above{position:absolute;left:12px;right:12px;bottom:100%;padding-bottom:10px;display:flex;flex-direction:column;gap:8px;pointer-events:none;transition:opacity .2s}
+.above>*{pointer-events:auto}
+#sheet[data-s=full] .above{opacity:0}
+#sheet[data-s=full] .above>*{pointer-events:none}
+.mapctl{display:flex;justify-content:space-between;gap:8px}
 .layers button{padding:6px 10px}
 .base button{padding:6px 10px}
-.trip-banner{position:absolute;z-index:600;left:12px;right:12px;bottom:56px;background:rgba(20,27,51,.92);border:1px solid var(--eye);
+.trip-banner{background:rgba(20,27,51,.92);border:1px solid var(--eye);
   border-radius:14px;padding:10px 12px;display:none;align-items:center;gap:10px;font-size:14px}
 .trip-banner.on{display:flex}
 .trip-banner span{flex:1}
 .trip-banner button{border:0;background:var(--eye);color:var(--deep);font-weight:700;border-radius:999px;padding:6px 12px}
 
-#sheet{position:relative;z-index:2;margin-top:calc(58svh - 18px);background:var(--ink);border-radius:20px 20px 0 0;
-  padding:22px 18px calc(env(safe-area-inset-bottom,0px) + 40px);min-height:50svh;box-shadow:0 -10px 30px rgba(0,0,0,.35)}
-.grab{width:38px;height:4px;border-radius:2px;background:var(--line);margin:-10px auto 16px}
+#sheet{position:fixed;z-index:2;left:0;right:0;bottom:0;height:calc(100svh - env(safe-area-inset-top,0px) - 60px);display:flex;flex-direction:column;
+  background:var(--ink);border-radius:20px 20px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.35);transform:translateY(100%);
+  transition:transform .34s cubic-bezier(.2,.85,.25,1);will-change:transform}
+#sheet.dragging{transition:none}
+.head{flex:none;padding:10px 0 12px;touch-action:none;cursor:grab;border:0;background:none;width:100%}
+.grab{width:40px;height:5px;border-radius:3px;background:#3A4470;margin:0 auto}
+#scroller{flex:1;min-height:0;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:4px 18px calc(env(safe-area-inset-bottom,0px) + 40px)}
+#sheet[data-s=full] #scroller{overflow-y:auto}
 .lede{font-size:21px;line-height:1.35;font-weight:400;margin:0 0 20px;max-width:34ch}
 .lede b{font-weight:800;color:var(--eye)}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:30px}
@@ -82,7 +90,14 @@ section{margin-bottom:34px}
 .trip{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:none;padding:10px 0;border-top:1px solid var(--line);font-size:15px}
 .trip .when{flex:1}
 .trip .when small{display:block;color:var(--muted);font-size:13px}
-.trip .dur{font-weight:700;color:var(--eye)}
+.trip .dur{font-weight:700;color:var(--eye);display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.trip .dur svg{width:15px;height:15px;flex:none}
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.filters label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.filters select{font:inherit;font-size:15px;color:var(--moon);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 10px;-webkit-appearance:none;appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,#949AB8 50%),linear-gradient(135deg,#949AB8 50%,transparent 50%);background-position:calc(100% - 15px) 55%,calc(100% - 10px) 55%;background-size:5px 5px;background-repeat:no-repeat}
+.tripbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;font-size:14px;color:var(--muted)}
+.tripbar button{border:1px solid var(--eye);background:none;color:var(--eye);border-radius:999px;padding:6px 12px;font-weight:700;font-size:13px}
 .more{border:1px solid var(--line);background:none;border-radius:999px;padding:8px 14px;font-size:14px;margin-top:10px;color:var(--muted)}
 .card{background:var(--panel);border-radius:16px;padding:16px;margin-bottom:12px}
 .btn{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:999px;padding:11px 18px;font-weight:700;font-size:15px;background:var(--eye);color:var(--deep)}
@@ -99,7 +114,7 @@ input[type=text]{font:inherit;font-size:16px;color:var(--moon);background:var(--
 .spotpin{background:var(--grass);color:var(--deep);border:2px solid #0D1224;border-radius:50%;font:800 13px var(--f);display:grid;place-items:center}
 .homepin{background:var(--eye);border:3px solid #0D1224;border-radius:50%;box-shadow:0 0 0 6px var(--eye-soft)}
 .catdot{background:var(--eye);border:2px solid #fff;border-radius:50%;box-shadow:0 0 12px var(--eye)}
-@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}#sheet{transition:none}}
 </style>
 </head>
 <body>
@@ -111,19 +126,22 @@ input[type=text]{font:inherit;font-size:16px;color:var(--moon);background:var(--
       <button data-r="7">7 days</button><button data-r="30">30 days</button><button data-r="0">All</button>
     </div>
   </div>
-  <div class="trip-banner" id="tripBanner"><span id="tripText"></span><button id="tripClose">Show all</button></div>
-  <div class="mapctl">
-    <div class="seg layers" id="layers" role="group" aria-label="Map layers">
-      <button data-l="routes">Routes</button><button data-l="heat">Heat</button><button data-l="spots">Spots</button><button data-l="range">Range</button>
-    </div>
-    <div class="seg base" id="base" role="group" aria-label="Base map">
-      <button data-b="sat">Satellite</button><button data-b="map">Map</button>
-    </div>
-  </div>
 </div>
 
-<main id="sheet">
-  <div class="grab"></div>
+<main id="sheet" data-s="peek">
+  <div class="above">
+    <div class="trip-banner" id="tripBanner"><span id="tripText"></span><button id="tripClose">Show all</button></div>
+    <div class="mapctl">
+      <div class="seg layers" id="layers" role="group" aria-label="Map layers">
+        <button data-l="routes">Routes</button><button data-l="heat">Heat</button><button data-l="spots">Spots</button><button data-l="range">Range</button>
+      </div>
+      <div class="seg base" id="base" role="group" aria-label="Base map">
+        <button data-b="sat">Satellite</button><button data-b="map">Map</button>
+      </div>
+    </div>
+  </div>
+  <button class="head" id="head" aria-label="Expand or collapse details"><div class="grab"></div></button>
+  <div id="scroller">
   <div id="content"></div>
 
   <section id="settings">
@@ -142,6 +160,7 @@ input[type=text]{font:inherit;font-size:16px;color:var(--moon);background:var(--
     </div>
     <div class="card" id="syncCard"></div>
   </section>
+  </div>
 </main>
 
 <script>
@@ -154,7 +173,7 @@ const $=s=>document.querySelector(s);
 
 // ---------- State ----------
 const LS="cattracks.v1";
-let S={pts:[],name:"",code:"",lastSync:0,range:30,layers:{routes:true,heat:false,spots:true,range:false},base:"sat"};
+let S={pts:[],name:"",code:"",lastSync:0,range:30,tf:{sort:"new",dur:0,far:0,tod:"any"},layers:{routes:true,heat:false,spots:true,range:false},base:"sat"};
 try{Object.assign(S,JSON.parse(localStorage.getItem(LS)||"{}"))}catch(e){}
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
 
@@ -334,7 +353,10 @@ function drawMap(){
     L.marker([s.lat,s.lon],{icon:L.divIcon({className:"spotpin",html:i+1,iconSize:[24,24]}),title:"Spot "+(i+1)}).addTo(layerGroups.spots);
   });
   // Range
-  if(hull.length>2) L.polygon(hull,{color:"#6E7BD6",weight:2,dashArray:"6 6",fillColor:"#6E7BD6",fillOpacity:.12,interactive:false}).addTo(layerGroups.range);
+  if(hull.length>2){
+    L.polygon(hull,{color:"#0D1224",weight:7,opacity:.55,fill:false,interactive:false}).addTo(layerGroups.range);
+    L.polygon(hull,{color:"#C3CAFF",weight:3,opacity:1,fillColor:"#6E7BD6",fillOpacity:.3,interactive:false}).addTo(layerGroups.range);
+  }
   L.marker(H,{icon:L.divIcon({className:"homepin",iconSize:[16,16]}),title:"Home",zIndexOffset:1000}).addTo(layerGroups.home);
   applyLayers(); fit();
 }
@@ -349,20 +371,19 @@ function applyLayers(){
 function fit(){
   if(!A) return; const H=[A.home[1],A.home[2]];
   const ll=A.away.length?A.away.map(p=>[p[1],p[2]]):[H]; ll.push(H);
-  map.fitBounds(L.latLngBounds(ll).pad(.12),{maxZoom:19,paddingTopLeft:[0,40],paddingBottomRight:[0,40]});
+  map.fitBounds(L.latLngBounds(ll).pad(.12),mapPad());
 }
 let anim=null;
 function showTrip(t){
-  tripLayer.clearLayers(); cancelAnimationFrame(anim);
+  setSnap("peek"); tripLayer.clearLayers(); cancelAnimationFrame(anim);
   const H=[A.home[1],A.home[2]], ll=[H,...t.pts.map(p=>[p[1],p[2]])]; if(t.end!==t.pts[t.pts.length-1][0]) ll.push(H);
   L.polyline(ll,{color:"#F2B53A",weight:4,opacity:.9,lineJoin:"round"}).addTo(tripLayer);
   t.pts.forEach(p=>L.circleMarker([p[1],p[2]],{radius:3,color:"#F2B53A",weight:1,fillOpacity:1}).bindTooltip(fmtTime(p[0])).addTo(tripLayer));
   const dot=L.marker(H,{icon:L.divIcon({className:"catdot",iconSize:[14,14]}),interactive:false}).addTo(tripLayer);
   applyLayers();
-  map.fitBounds(L.latLngBounds(ll).pad(.25),{maxZoom:19});
+  map.fitBounds(L.latLngBounds(ll).pad(.15),mapPad());
   $("#tripText").textContent=fmtDay(t.start)+", "+fmtTime(t.start)+" for "+durLong(t.dur);
   $("#tripBanner").classList.add("on");
-  window.scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth"});
   if(matchMedia("(prefers-reduced-motion:reduce)").matches) return;
   // Replay: 5 s, proportional to path length
   const seg=[];let tot=0;for(let i=1;i<ll.length;i++){const d=d2(ll[i-1][0],ll[i-1][1],ll[i][0],ll[i][1]);seg.push(d);tot+=d}
@@ -372,7 +393,7 @@ function showTrip(t){
     if(f<1) anim=requestAnimationFrame(step)};
   anim=requestAnimationFrame(step);
 }
-function clearTrip(){cancelAnimationFrame(anim);tripLayer.clearLayers();$("#tripBanner").classList.remove("on");applyLayers();fit()}
+function clearTrip(noFit){const was=tripLayer.getLayers().length;cancelAnimationFrame(anim);tripLayer.clearLayers();$("#tripBanner").classList.remove("on");applyLayers();if(was&&!noFit) fit()}
 
 // ---------- Charts ----------
 const svgNS="http://www.w3.org/2000/svg";
@@ -445,16 +466,50 @@ function render(){
   const topDir=A.dirs.indexOf(Math.max(...A.dirs));
   h+=`<section><h2>Territory</h2><div class="cmp">${compassSVG(A.dirs)}<p>Covers about <b>${A.area>=10000?(A.area/10000).toFixed(2)+" hectares":Math.round(A.area).toLocaleString("en-GB")+" m²"}</b>. Heads <b>${compassWord(topDir*45)}</b> most often.</p></div></section>`;
   h+=`<section><h2>Time outside per day</h2><p class="sub">Longest trip: ${durLong(A.longest.dur)} on ${fmtDay(A.longest.start)}.</p>${daysSVG(A.perDay,A.from,A.now)}</section>`;
-  const list=A.trips.slice().reverse();
-  h+=`<section><h2>Trips</h2><p class="sub">Tap a trip to replay it on the map.</p>`;
-  list.slice(0,tripShown).forEach((t,i)=>{h+=`<button class="trip" data-trip="${A.trips.length-1-i}"><span class="when">${fmtDay(t.start)}, ${fmtTime(t.start)}<small>${metres(t.far)} from home, ${metres(t.len)} walked</small></span><span class="dur">${dur(t.dur)}</span></button>`});
-  if(list.length>tripShown) h+=`<button class="more" id="moreTrips">Show more trips</button>`;
-  h+=`</section>`;
+  const F=S.tf, opt=(v,cur,l)=>`<option value="${v}"${String(v)===String(cur)?" selected":""}>${l}</option>`;
+  h+=`<section><h2>Trips</h2><p class="sub">Tap a trip to replay it on the map.</p>
+  <div class="filters">
+    <label>Sort by<select data-f="sort">${opt("new",F.sort,"Newest")}${opt("dur",F.sort,"Longest time")}${opt("far",F.sort,"Furthest from home")}${opt("len",F.sort,"Most walked")}</select></label>
+    <label>Time out<select data-f="dur">${opt(0,F.dur,"Any")}${opt(600,F.dur,"10 min+")}${opt(1800,F.dur,"30 min+")}${opt(3600,F.dur,"1 hr+")}</select></label>
+    <label>Distance from home<select data-f="far">${opt(0,F.far,"Any")}${opt(50,F.far,"50 m+")}${opt(100,F.far,"100 m+")}${opt(200,F.far,"200 m+")}${opt(300,F.far,"300 m+")}</select></label>
+    <label>Time of day<select data-f="tod">${opt("any",F.tod,"Any")}${opt("night",F.tod,"Night")}${opt("day",F.tod,"Daytime")}</select></label>
+  </div>
+  <div class="tripbar"><span id="tripCount"></span><button id="tripsOnMap">Show on map</button></div>
+  <div id="tripList"></div></section>`;
   el.innerHTML=h;
-  el.querySelectorAll("[data-spot]").forEach(b=>b.onclick=()=>{const s=A.spots[+b.dataset.spot];clearTrip();S.layers.spots=true;applyLayers();map.setView([s.lat,s.lon],19);window.scrollTo({top:0,behavior:"smooth"})});
-  el.querySelectorAll("[data-trip]").forEach(b=>b.onclick=()=>showTrip(A.trips[+b.dataset.trip]));
-  const m=$("#moreTrips"); if(m) m.onclick=()=>{tripShown+=20;render()};
-  updateDataInfo();
+  el.querySelectorAll("[data-f]").forEach(x=>x.onchange=()=>{const k=x.dataset.f;S.tf[k]=k==="sort"||k==="tod"?x.value:+x.value;save();tripShown=10;renderTrips()});
+  $("#tripsOnMap").onclick=()=>{const l=filteredTrips();if(l.length) showTrips(l)};
+  renderTrips();
+  el.querySelectorAll("[data-spot]").forEach(b=>b.onclick=()=>{const s=A.spots[+b.dataset.spot];clearTrip(true);S.layers.spots=true;applyLayers();setSnap("peek");
+    const pt=map.project([s.lat,s.lon],19).add([0,visibleSheet()/2-30]);map.setView(map.unproject(pt,19),19)});
+  updateDataInfo(); if(typeof setSnap==="function"&&SH.dataset.s) setSnap(snap);
+}
+const WATCH=`<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="9.2" r="5.3"/><path d="M8 9.2V6.4M6.3 1.6h3.4M8 1.6v2.3M12.3 4.2l1-1"/></svg>`;
+function isNight(t){const l=local(t.start),h=l.h+l.m/60;return h<A.sun.rise||h>=A.sun.set}
+function filteredTrips(){
+  const F=S.tf, key={new:t=>-t.start,dur:t=>-t.dur,far:t=>-t.far,len:t=>-t.len}[F.sort]||(t=>-t.start);
+  return A.trips.filter(t=>t.dur>=F.dur&&t.far>=F.far&&(F.tod==="any"||(F.tod==="night")===isNight(t))).sort((a,b)=>key(a)-key(b));
+}
+function renderTrips(){
+  const list=filteredTrips(), box=$("#tripList"); if(!box) return;
+  $("#tripCount").textContent=list.length===A.trips.length?`All ${list.length} trips`:`${list.length} of ${A.trips.length} trips`;
+  $("#tripsOnMap").classList.toggle("hide",!list.length);
+  let h=list.length?"":`<p class="sub" style="padding-top:10px">No trips match. Try loosening a filter.</p>`;
+  list.slice(0,tripShown).forEach(t=>{h+=`<button class="trip" data-trip="${A.trips.indexOf(t)}"><span class="when">${fmtDay(t.start)}, ${fmtTime(t.start)}<small>${metres(t.far)} from home, ${metres(t.len)} walked</small></span><span class="dur" aria-label="${durLong(t.dur)} out">${WATCH}${dur(t.dur)}</span></button>`});
+  if(list.length>tripShown) h+=`<button class="more" id="moreTrips">Show more trips</button>`;
+  box.innerHTML=h;
+  box.querySelectorAll("[data-trip]").forEach(b=>b.onclick=()=>showTrip(A.trips[+b.dataset.trip]));
+  const m=$("#moreTrips"); if(m) m.onclick=()=>{tripShown+=20;renderTrips()};
+}
+function showTrips(list){
+  setSnap("peek"); tripLayer.clearLayers(); cancelAnimationFrame(anim);
+  const H=[A.home[1],A.home[2]], all=[H];
+  const op=Math.max(.25,Math.min(.8,4/Math.sqrt(list.length)));
+  for(const t of list){const ll=[H,...t.pts.map(p=>[p[1],p[2]])]; if(t.end!==t.pts[t.pts.length-1][0]) ll.push(H); all.push(...ll);
+    L.polyline(ll,{color:"#F2B53A",weight:3.5,opacity:op,lineJoin:"round"}).addTo(tripLayer)}
+  applyLayers(); map.fitBounds(L.latLngBounds(all).pad(.15),mapPad());
+  $("#tripText").textContent=list.length===1?"1 trip shown":`${list.length} trips shown`;
+  $("#tripBanner").classList.add("on");
 }
 function updateDataInfo(){
   const p=S.pts; $("#dataInfo").textContent=p.length?`${p.length.toLocaleString("en-GB")} points saved, ${fmtDay(p[0][0])} to ${fmtDay(p[p.length-1][0])}.`:"No data yet.";
@@ -500,6 +555,47 @@ function renderSync(){
   $("#share").onclick=async()=>{const url=joinLink();try{if(navigator.share) await navigator.share({title:"Cat tracks",url});else{await navigator.clipboard.writeText(url);$("#share").textContent="Link copied"}}catch(e){}};
 }
 
+// ---------- Bottom sheet ----------
+const SH=$("#sheet"), SC=$("#scroller");
+let snap="peek", curY=0;
+function peekH(){const f=$("#content").firstElementChild;const head=$("#head").offsetHeight;
+  const h=f?(f.classList.contains("empty")?f.offsetHeight:f.offsetHeight+24):120;return Math.max(110,Math.min(320,head+h))}
+function snaps(){const h=SH.offsetHeight;return {full:0,half:Math.max(0,h-innerHeight*.52),peek:Math.max(0,h-peekH())}}
+function place(y){curY=y;SH.style.transform=`translateY(${y}px)`}
+function setSnap(s){snap=s;SH.dataset.s=s;if(s!=="full") SC.scrollTop=0;place(snaps()[s])}
+function visibleSheet(){return SH.offsetHeight-curY}
+function mapPad(){return {maxZoom:19,paddingTopLeft:[16,70],paddingBottomRight:[16,visibleSheet()+64]}}
+(function(){
+  const order=["peek","half","full"];
+  let startY=0,startOff=0,lastY=0,lastT=0,vel=0,mode=null;
+  const nearest=()=>{const P=snaps();return order.reduce((a,k)=>Math.abs(P[k]-curY)<Math.abs(P[a]-curY)?k:a,"peek")};
+  SH.addEventListener("touchstart",e=>{
+    if(e.target.closest(".above")){mode=null;return}
+    const y=e.touches[0].clientY; startY=lastY=y; startOff=curY; lastT=performance.now(); vel=0;
+    mode=(snap!=="full"||e.target.closest("#head"))?"pending":(SC.scrollTop<=0?"maybe":null);
+  },{passive:true});
+  SH.addEventListener("touchmove",e=>{
+    if(!mode) return;
+    const y=e.touches[0].clientY, dy=y-startY;
+    if(mode==="maybe"){ if(dy>6&&SC.scrollTop<=0){mode="drag";startY=y;startOff=curY} else if(Math.abs(dy)>6){mode=null;return} else return }
+    if(mode==="pending"){ if(Math.abs(dy)<6) return; mode="drag"; startY=y }
+    e.preventDefault(); SH.classList.add("dragging");
+    const now=performance.now(); vel=(y-lastY)/Math.max(1,now-lastT); lastY=y; lastT=now;
+    const max=SH.offsetHeight-90; let ny=startOff+(y-startY);
+    if(ny<0) ny=ny/3; if(ny>max) ny=max+(ny-max)/3; place(ny);
+  },{passive:false});
+  const end=()=>{
+    if(mode!=="drag"){mode=null;return} mode=null; SH.classList.remove("dragging");
+    let i=order.indexOf(nearest());
+    if(vel>.45&&order[i]===snap) i--; else if(vel<-.45&&order[i]===snap) i++;
+    if(vel>.45) i=Math.min(i,order.indexOf(snap)-1); if(vel<-.45) i=Math.max(i,order.indexOf(snap)+1);
+    setSnap(order[Math.max(0,Math.min(2,i))]);
+  };
+  SH.addEventListener("touchend",end); SH.addEventListener("touchcancel",end);
+  $("#head").addEventListener("click",()=>setSnap(snap==="peek"?"half":snap==="half"?"full":"peek"));
+  addEventListener("resize",()=>setSnap(snap));
+})();
+
 // ---------- Events ----------
 $("#file").addEventListener("change",async e=>{
   const files=[...e.target.files]; e.target.value=""; if(!files.length) return;
@@ -523,7 +619,7 @@ $("#catName").addEventListener("change",e=>{S.name=e.target.value.trim();save();
 const jp=new URLSearchParams(location.search).get("join");
 if(jp){const c=jp.toUpperCase().replace(/[^A-Z0-9]/g,"");if(c.length>=10){S.code=c;save()} history.replaceState(null,"",location.pathname)}
 
-initMap(); render();
+initMap(); render(); setSnap("peek"); fit();
 if(S.code) syncNow();
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&S.code) syncNow()});
 </script>
