@@ -60,9 +60,24 @@ button:focus-visible,input:focus-visible,label:focus-visible{outline:2px solid v
   background:var(--ink);border-radius:20px 20px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.35);transform:translateY(100%);
   transition:transform .34s cubic-bezier(.2,.85,.25,1);will-change:transform}
 #sheet.dragging{transition:none}
-.head{flex:none;padding:10px 0 12px;touch-action:none;cursor:grab;border:0;background:none;width:100%}
+.head{flex:none;touch-action:none;border-bottom:1px solid var(--line)}
+.grabbtn{display:block;width:100%;border:0;background:none;padding:10px 0 8px;cursor:grab}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);padding:0 6px 6px}
+.tabs button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:12px;color:var(--muted);font-size:11px;font-weight:600}
+.tabs svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabs button[aria-selected=true]{color:var(--eye);background:var(--eye-soft)}
+.pane{padding-top:16px}
+.pane[hidden]{display:none}
+.iconbtn{width:38px;height:38px;flex:none;border-radius:50%;border:1px solid var(--line);background:rgba(20,27,51,.82);display:grid;place-items:center;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.iconbtn svg{width:20px;height:20px;fill:none;stroke:var(--moon);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#settingsPanel{position:fixed;inset:0;z-index:1000;background:var(--ink);display:flex;flex-direction:column;transform:translateY(100%);transition:transform .32s cubic-bezier(.2,.85,.25,1);visibility:hidden}
+#settingsPanel.open{transform:none;visibility:visible}
+#settingsPanel header{display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 14px) 18px 12px;border-bottom:1px solid var(--line)}
+#settingsPanel header h2{font-size:22px;margin:0}
+#settingsPanel .body{flex:1;overflow-y:auto;padding:18px 18px calc(env(safe-area-inset-bottom,0px) + 30px)}
+.done{border:0;background:none;color:var(--eye);font-weight:700;font-size:16px;padding:6px 4px}
 .grab{width:40px;height:5px;border-radius:3px;background:#3A4470;margin:0 auto}
-#scroller{flex:1;min-height:0;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:4px 18px calc(env(safe-area-inset-bottom,0px) + 40px)}
+#scroller{flex:1;min-height:0;overflow-x:hidden;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:4px 18px calc(env(safe-area-inset-bottom,0px) + 40px)}
 #sheet[data-s=full] #scroller{overflow-y:auto}
 .lede{font-size:21px;line-height:1.35;font-weight:400;margin:0 0 20px;max-width:34ch}
 .lede b{font-weight:800;color:var(--eye)}
@@ -110,16 +125,16 @@ section{margin-bottom:34px}
 .wxrow .v{text-align:right;font-weight:700}
 .note{font-size:13px;color:var(--muted);margin:6px 0 0}
 #routine{width:100%;height:auto;display:block}
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;width:100%;max-width:330px;margin:0 auto}
 .cal .wd{font-size:11px;color:var(--muted);text-align:center;padding-bottom:2px}
 .cal .mo{grid-column:1/-1;font-size:14px;font-weight:700;margin:12px 0 4px}
 .cal .mo:first-child{margin-top:0}
-.cal button,.cal .x{position:relative;aspect-ratio:1;border:0;border-radius:7px;font-size:11px;padding:0;color:var(--moon);background:#1F2747;display:flex;align-items:flex-start;justify-content:flex-start}
+.cal button,.cal .x{position:relative;width:100%;min-width:0;height:auto;aspect-ratio:1/1;box-sizing:border-box;-webkit-appearance:none;appearance:none;margin:0;border:0;border-radius:7px;overflow:hidden;font-size:11px;padding:0;color:var(--moon);background:#1F2747;display:flex;align-items:flex-start;justify-content:flex-start}
 .cal button span{padding:4px 0 0 5px;opacity:.8}
 .cal button.hot{color:var(--deep);font-weight:700}
 .cal .x{background:none}
 .cal .rain{position:absolute;right:4px;bottom:4px;width:6px;height:6px;border-radius:50%;background:#8FB6F0;box-shadow:0 0 0 1.5px var(--ink)}
-.callegend{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted);margin-top:10px;flex-wrap:wrap}
+.callegend{max-width:330px;margin-left:auto;margin-right:auto;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted);margin-top:10px;flex-wrap:wrap}
 .callegend i{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin-right:4px}
 .tripbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;font-size:14px;color:var(--muted)}
 .tripbar button{border:1px solid var(--eye);background:none;color:var(--eye);border-radius:999px;padding:6px 12px;font-weight:700;font-size:13px}
@@ -139,7 +154,7 @@ input[type=text]{font:inherit;font-size:16px;color:var(--moon);background:var(--
 .spotpin{background:var(--grass);color:var(--deep);border:2px solid #0D1224;border-radius:50%;font:800 13px var(--f);display:grid;place-items:center}
 .homepin{background:var(--eye);border:3px solid #0D1224;border-radius:50%;box-shadow:0 0 0 6px var(--eye-soft)}
 .catdot{background:var(--eye);border:2px solid #fff;border-radius:50%;box-shadow:0 0 12px var(--eye)}
-@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}#sheet{transition:none}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}#sheet,#settingsPanel{transition:none}}
 </style>
 </head>
 <body>
@@ -150,6 +165,7 @@ input[type=text]{font:inherit;font-size:16px;color:var(--moon);background:var(--
     <div class="seg" id="range" role="group" aria-label="Date range">
       <button data-r="7">7 days</button><button data-r="30">30 days</button><button data-r="0">All</button>
     </div>
+    <button class="iconbtn" id="openSettings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button>
   </div>
 </div>
 
@@ -165,10 +181,16 @@ input[type=text]{font:inherit;font-size:16px;color:var(--moon);background:var(--
       </div>
     </div>
   </div>
-  <button class="head" id="head" aria-label="Expand or collapse details"><div class="grab"></div></button>
+  <div class="head" id="head"><button class="grabbtn" id="grabBtn" aria-label="Expand or collapse details"><div class="grab"></div></button><nav class="tabs" id="tabs" role="tablist"><button role="tab" data-tab="overview" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V11M10 19V5M16 19v-6M3 19h18"/></svg><span>Overview</span></button><button role="tab" data-tab="routine" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg><span>Routine</span></button><button role="tab" data-tab="places" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.3"/></svg><span>Places</span></button><button role="tab" data-tab="weather" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A5.5 5.5 0 0 0 6.8 11 3.5 3.5 0 0 0 7 18Z"/></svg><span>Weather</span></button><button role="tab" data-tab="trips" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19c3 0 3-6 7-6s4-6 7-6"/><circle cx="5" cy="19" r="1.6"/><circle cx="19" cy="7" r="1.6"/></svg><span>Trips</span></button></nav></div>
   <div id="scroller">
   <div id="content"></div>
 
+  </div>
+</main>
+
+<div id="settingsPanel" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+  <header><h2 id="setTitle">Settings</h2><button class="done" id="closeSettings">Done</button></header>
+  <div class="body">
   <section id="settings">
     <h2>Data</h2>
     <p class="sub" id="dataInfo"></p>
@@ -186,7 +208,7 @@ input[type=text]{font:inherit;font-size:16px;color:var(--moon);background:var(--
     <div class="card" id="syncCard"></div>
   </section>
   </div>
-</main>
+</div>
 
 <script>
 "use strict";
@@ -200,6 +222,7 @@ const $=s=>document.querySelector(s);
 const LS="cattracks.v1";
 let S={pts:[],name:"",code:"",lastSync:0,range:30,tf:{sort:"new",dur:0,far:0,tod:"any",wx:"any",show:"all"},layers:{routes:true,heat:false,spots:true,range:false},base:"sat"};
 try{Object.assign(S,JSON.parse(localStorage.getItem(LS)||"{}"))}catch(e){}
+const TABS=["overview","routine","places","weather","trips"]; if(!TABS.includes(S.tab)) S.tab="overview";
 S.tf=Object.assign({sort:"new",dur:0,far:0,tod:"any",wx:"any",show:"all"},S.tf);
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
 
@@ -578,12 +601,12 @@ function render(){
   document.querySelectorAll("#range button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.r===S.range));
   const el=$("#content");
   if(!S.pts.length){
-    A=null; drawMap();
+    A=null; drawMap(); $("#tabs").classList.add("hide");
     el.innerHTML=`<div class="empty"><h2>Where does your cat go?</h2><p>Import a GPX export from Tractive to see routes, favourite spots and when they're out.</p><label class="btn" for="file">Import GPX</label></div>`;
     updateDataInfo(); return;
   }
   A=analyse(S.pts,S.range); drawMap();
-  if(!A||!A.trips.length){el.innerHTML=`<div class="empty"><h2>No trips in this period</h2><p>Try a longer date range, or import a newer export.</p></div>`;updateDataInfo();return}
+  if(!A||!A.trips.length){$("#tabs").classList.add("hide");el.innerHTML=`<div class="empty"><h2>No trips in this period</h2><p>Try a longer date range, or import a newer export.</p></div>`;updateDataInfo();return}
   const perDayAvg=A.total/A.days, tripsPerDay=A.trips.length/A.days, nightPct=A.nightPct;
   const fav=A.spots[0];
   const rangeWord=S.range===7?"this week":S.range===30?"in the last 30 days":"since tracking began";
@@ -597,7 +620,8 @@ function render(){
     <div class="stat"><div class="v">${metres(A.lenTotal/A.days)}</div><div class="k">walked a day (approx.)</div></div>
   </div>
   <section><h2>When ${esc(name)} is out</h2><p class="sub">Time outside by hour, UK time. The dark band is night.</p><div class="clockrow">${clockSVG(A.hours,A.sun,A.peakH)}</div></section>`;
-  h+=routineHTML(name);
+  h+="\u0001routine\u0001"+routineHTML(name);
+  h+="\u0001places\u0001";
   if(A.spots.length){
     const maxW=A.spots[0].w;
     h+=`<section><h2>Favourite spots</h2><p class="sub">Places ${esc(name)} stays still the longest. Tap to see on the map.</p>`;
@@ -608,10 +632,10 @@ function render(){
   h+=`<section><h2>Territory</h2><div class="cmp">${compassSVG(A.dirs)}<p>Covers about <b>${A.area>=10000?(A.area/10000).toFixed(2)+" hectares":Math.round(A.area).toLocaleString("en-GB")+" m²"}</b>. Heads <b>${compassWord(topDir*45)}</b> most often.</p></div>`;
   const newT=A.trips.filter(t=>t.isNew);
   h+=`<p class="note" style="font-size:14px;margin-top:14px">Explored about <b style="color:var(--moon)">${(A.explored/10000).toFixed(1)} hectares</b> since tracking began. ${newT.length?`${newT.length} trip${newT.length>1?"s":""} in this period reached new ground. <button class="more" id="showNew" style="margin-top:8px">Show new-ground trips</button>`:"No new ground in this period."}</p></section>`;
-  h+=weatherHTML(name);
-  h+=`<section><h2>Calendar</h2><p class="sub">Time outside each day. Tap a day to see its trips. Longest trip: ${durLong(A.longest.dur)} on ${fmtDay(A.longest.start)}.</p>${calendarHTML()}</section>`;
+  h+="\u0001weather\u0001"+weatherHTML(name);
+  h+="\u0001routine\u0001"+`<section><h2>Calendar</h2><p class="sub">Time outside each day. Tap a day to see its trips. Longest trip: ${durLong(A.longest.dur)} on ${fmtDay(A.longest.start)}.</p>${calendarHTML()}</section>`;
   const F=S.tf, opt=(v,cur,l)=>`<option value="${v}"${String(v)===String(cur)?" selected":""}>${l}</option>`;
-  h+=`<section><h2>Trips</h2><p class="sub">Tap a trip to replay it on the map.</p>
+  h+="\u0001trips\u0001"+`<section><h2>Trips</h2><p class="sub">Tap a trip to replay it on the map.</p>
   <div class="filters">
     <label>Sort by<select data-f="sort">${opt("new",F.sort,"Newest")}${opt("dur",F.sort,"Longest time")}${opt("far",F.sort,"Furthest from home")}${opt("len",F.sort,"Most walked")}</select></label>
     <label>Time out<select data-f="dur">${opt(0,F.dur,"Any")}${opt(600,F.dur,"10 min+")}${opt(1800,F.dur,"30 min+")}${opt(3600,F.dur,"1 hr+")}</select></label>
@@ -622,7 +646,11 @@ function render(){
   </div>
   <div class="tripbar"><span id="tripCount"></span><button id="tripsOnMap">Show on map</button></div>
   <div id="tripList"></div></section>`;
-  el.innerHTML=h;
+  const parts=h.split("\u0001"), P={overview:parts[0]};
+  for(let i=1;i<parts.length;i+=2) P[parts[i]]=(P[parts[i]]||"")+parts[i+1];
+  if(!P.weather) P.weather=`<section><h2>Weather</h2><p class="sub">Not enough weather yet. It loads automatically when you're online.</p></section>`;
+  el.innerHTML=TABS.map(k=>`<div class="pane" data-pane="${k}" role="tabpanel"${k===S.tab?"":" hidden"}>${P[k]||""}</div>`).join("");
+  $("#tabs").classList.remove("hide"); updTabs();
   el.querySelectorAll("[data-f]").forEach(x=>x.onchange=()=>{const k=x.dataset.f;S.tf[k]=["sort","tod","wx","show"].includes(k)?x.value:+x.value;save();tripShown=10;renderTrips()});
   $("#tripsOnMap").onclick=()=>{const l=filteredTrips();if(l.length) showTrips(l)};
   renderTrips();
@@ -709,8 +737,10 @@ function renderSync(){
 // ---------- Bottom sheet ----------
 const SH=$("#sheet"), SC=$("#scroller");
 let snap="peek", curY=0;
-function peekH(){const f=$("#content").firstElementChild;const head=$("#head").offsetHeight;
-  const h=f?(f.classList.contains("empty")?f.offsetHeight:f.offsetHeight+24):120;return Math.max(110,Math.min(320,head+h))}
+function peekH(){const head=$("#head").offsetHeight, pane=$(`.pane[data-pane="${S.tab}"]`), em=$("#content .empty");
+  if(em) return Math.min(380,head+em.offsetHeight+30);
+  const t=pane&&(pane.querySelector(".lede")||pane.querySelector("h2")); if(!t) return head+20;
+  return Math.max(head+40,Math.min(head+240,head+(t.getBoundingClientRect().bottom-pane.getBoundingClientRect().top)+(t.tagName==="H2"?8:20)))}
 function snaps(){const h=SH.offsetHeight;return {full:0,half:Math.max(0,h-innerHeight*.52),peek:Math.max(0,h-peekH())}}
 function place(y){curY=y;SH.style.transform=`translateY(${y}px)`}
 function setSnap(s){snap=s;SH.dataset.s=s;if(s!=="full") SC.scrollTop=0;place(snaps()[s])}
@@ -743,9 +773,18 @@ function mapPad(){return {maxZoom:19,paddingTopLeft:[16,70],paddingBottomRight:[
     setSnap(order[Math.max(0,Math.min(2,i))]);
   };
   SH.addEventListener("touchend",end); SH.addEventListener("touchcancel",end);
-  $("#head").addEventListener("click",()=>setSnap(snap==="peek"?"half":snap==="half"?"full":"peek"));
+  $("#grabBtn").addEventListener("click",()=>setSnap(snap==="peek"?"half":snap==="half"?"full":"peek"));
+  $("#tabs").addEventListener("click",e=>{const b=e.target.closest("[data-tab]");if(!b) return;
+    const same=b.dataset.tab===S.tab; S.tab=b.dataset.tab; save(); updTabs(); SC.scrollTop=0;
+    if(snap==="peek") setSnap("half"); else if(same) setSnap(snap==="half"?"full":"half"); else setSnap(snap)});
   addEventListener("resize",()=>setSnap(snap));
 })();
+
+function updTabs(){document.querySelectorAll("#tabs [data-tab]").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===S.tab));
+  document.querySelectorAll(".pane").forEach(p=>p.hidden=p.dataset.pane!==S.tab)}
+const SP=$("#settingsPanel");
+$("#openSettings").onclick=()=>{SP.classList.add("open");setTimeout(()=>$("#closeSettings").focus(),50)};
+$("#closeSettings").onclick=()=>{SP.classList.remove("open");$("#openSettings").focus()};
 
 // ---------- Events ----------
 $("#file").addEventListener("change",async e=>{
@@ -756,7 +795,7 @@ $("#file").addEventListener("change",async e=>{
     for(const f of files){const pts=parseGPX(await f.text());n+=pts.length;S.pts=mergePts(S.pts,pts)}
     if(!n) throw new Error("No timestamped points found in that file");
     save(); msg.textContent=`Imported ${n.toLocaleString("en-GB")} points, ${(S.pts.length-before).toLocaleString("en-GB")} of them new.`;
-    tripShown=10; render(); if(S.code) syncNow(); fetchWeather();
+    tripShown=10; render(); setSnap(snap); if(S.code) syncNow(); fetchWeather();
   }catch(err){msg.className="msg err";msg.textContent=err.message||"Couldn't read that file."}
 });
 $("#range").addEventListener("click",e=>{const b=e.target.closest("button");if(!b) return;S.range=+b.dataset.r;save();clearTrip();tripShown=10;render()});
