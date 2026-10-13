@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cat tracks">
+<meta name="theme-color" content="#141B33">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<title>Cat tracks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<style>
+:root{
+  --ink:#141B33; --deep:#0D1224; --panel:#1C2442; --line:#2B3459;
+  --moon:#ECE8F4; --muted:#949AB8; --eye:#F2B53A; --eye-soft:rgba(242,181,58,.16);
+  --grass:#7FC8A0; --dusk:#6E7BD6;
+  --f:"Bricolage Grotesque",ui-rounded,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--deep);color:var(--moon);font-family:var(--f);-webkit-text-size-adjust:100%}
+body{overscroll-behavior:none}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,label:focus-visible{outline:2px solid var(--eye);outline-offset:2px}
+
+#mapwrap{position:fixed;inset:0 0 auto 0;height:58svh;z-index:1}
+#map{position:absolute;inset:0;background:#0b1020}
+.leaflet-container{font-family:var(--f)}
+.leaflet-control-attribution{background:rgba(13,18,36,.7)!important;color:var(--muted)!important;font-size:10px}
+.leaflet-control-attribution a{color:var(--muted)!important}
+.top{position:absolute;z-index:500;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 26px;
+  background:linear-gradient(rgba(13,18,36,.88),rgba(13,18,36,0));display:flex;align-items:center;gap:10px;pointer-events:none}
+.top>*{pointer-events:auto}
+.top h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.01em;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg{display:flex;background:rgba(20,27,51,.82);border:1px solid var(--line);border-radius:999px;padding:3px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.seg button{border:0;background:none;padding:6px 11px;border-radius:999px;font-size:13px;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed=true]{background:var(--eye);color:var(--deep)}
+.mapctl{position:absolute;z-index:500;left:12px;right:12px;bottom:12px;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
+.mapctl>*{pointer-events:auto}
+.layers button{padding:6px 10px}
+.base button{padding:6px 10px}
+.trip-banner{position:absolute;z-index:600;left:12px;right:12px;bottom:56px;background:rgba(20,27,51,.92);border:1px solid var(--eye);
+  border-radius:14px;padding:10px 12px;display:none;align-items:center;gap:10px;font-size:14px}
+.trip-banner.on{display:flex}
+.trip-banner span{flex:1}
+.trip-banner button{border:0;background:var(--eye);color:var(--deep);font-weight:700;border-radius:999px;padding:6px 12px}
+
+#sheet{position:relative;z-index:2;margin-top:calc(58svh - 18px);background:var(--ink);border-radius:20px 20px 0 0;
+  padding:22px 18px calc(env(safe-area-inset-bottom,0px) + 40px);min-height:50svh;box-shadow:0 -10px 30px rgba(0,0,0,.35)}
+.grab{width:38px;height:4px;border-radius:2px;background:var(--line);margin:-10px auto 16px}
+.lede{font-size:21px;line-height:1.35;font-weight:400;margin:0 0 20px;max-width:34ch}
+.lede b{font-weight:800;color:var(--eye)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:30px}
+.stat{background:var(--ink);padding:12px 14px}
+.stat .v{font-size:24px;font-weight:800;letter-spacing:-.02em}
+.stat .k{font-size:13px;color:var(--muted)}
+h2{font-size:17px;font-weight:800;margin:0 0 4px}
+.sub{color:var(--muted);font-size:14px;margin:0 0 14px;line-height:1.4}
+section{margin-bottom:34px}
+.clockrow{display:flex;justify-content:center}
+#clock{width:min(300px,82vw);height:auto}
+.spot{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:none;padding:11px 0;border-top:1px solid var(--line)}
+.spot:last-child{border-bottom:1px solid var(--line)}
+.spot .n{width:28px;height:28px;flex:none;border-radius:50%;background:var(--grass);color:var(--deep);font-weight:800;display:grid;place-items:center;font-size:14px}
+.spot .t{flex:1;min-width:0}
+.spot .t b{display:block;font-size:15px}
+.spot .t small{color:var(--muted);font-size:13px}
+.spot .bar{width:64px;height:6px;border-radius:3px;background:var(--line);overflow:hidden;flex:none}
+.spot .bar i{display:block;height:100%;background:var(--grass)}
+#days{width:100%;height:120px;display:block}
+.cmp{display:flex;gap:18px;align-items:center}
+#compass{width:132px;height:132px;flex:none}
+.cmp p{margin:0;font-size:15px;line-height:1.45}
+.trip{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:none;padding:10px 0;border-top:1px solid var(--line);font-size:15px}
+.trip .when{flex:1}
+.trip .when small{display:block;color:var(--muted);font-size:13px}
+.trip .dur{font-weight:700;color:var(--eye)}
+.more{border:1px solid var(--line);background:none;border-radius:999px;padding:8px 14px;font-size:14px;margin-top:10px;color:var(--muted)}
+.card{background:var(--panel);border-radius:16px;padding:16px;margin-bottom:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:999px;padding:11px 18px;font-weight:700;font-size:15px;background:var(--eye);color:var(--deep)}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--moon)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input[type=text]{font:inherit;font-size:16px;color:var(--moon);background:var(--deep);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+.msg{font-size:14px;color:var(--muted);margin:10px 0 0;line-height:1.4}
+.msg.err{color:#FF9C8A}
+.code{font-size:20px;font-weight:800;letter-spacing:.06em;color:var(--eye)}
+.empty{padding:28px 0 10px}
+.empty h2{font-size:26px;margin-bottom:8px}
+.empty p{color:var(--muted);line-height:1.5;margin:0 0 18px;max-width:36ch}
+.hide{display:none!important}
+.spotpin{background:var(--grass);color:var(--deep);border:2px solid #0D1224;border-radius:50%;font:800 13px var(--f);display:grid;place-items:center}
+.homepin{background:var(--eye);border:3px solid #0D1224;border-radius:50%;box-shadow:0 0 0 6px var(--eye-soft)}
+.catdot{background:var(--eye);border:2px solid #fff;border-radius:50%;box-shadow:0 0 12px var(--eye)}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div id="mapwrap">
+  <div id="map" role="region" aria-label="Map"></div>
+  <div class="top">
+    <h1 id="title">Cat tracks</h1>
+    <div class="seg" id="range" role="group" aria-label="Date range">
+      <button data-r="7">7 days</button><button data-r="30">30 days</button><button data-r="0">All</button>
+    </div>
+  </div>
+  <div class="trip-banner" id="tripBanner"><span id="tripText"></span><button id="tripClose">Show all</button></div>
+  <div class="mapctl">
+    <div class="seg layers" id="layers" role="group" aria-label="Map layers">
+      <button data-l="routes">Routes</button><button data-l="heat">Heat</button><button data-l="spots">Spots</button><button data-l="range">Range</button>
+    </div>
+    <div class="seg base" id="base" role="group" aria-label="Base map">
+      <button data-b="sat">Satellite</button><button data-b="map">Map</button>
+    </div>
+  </div>
+</div>
+
+<main id="sheet">
+  <div class="grab"></div>
+  <div id="content"></div>
+
+  <section id="settings">
+    <h2>Data</h2>
+    <p class="sub" id="dataInfo"></p>
+    <div class="card">
+      <div class="row">
+        <label class="btn" for="file">Import GPX</label>
+        <input type="file" id="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" multiple class="hide">
+      </div>
+      <p class="msg" id="importMsg">Export GPX from Tractive and import it here. New files merge with what's already saved, so overlapping exports are fine.</p>
+    </div>
+    <div class="card">
+      <label for="catName" class="sub" style="display:block;margin-bottom:6px">Cat's name</label>
+      <input type="text" id="catName" autocomplete="off" maxlength="30" placeholder="e.g. Pepper">
+    </div>
+    <div class="card" id="syncCard"></div>
+  </section>
+</main>
+
+<script>
+"use strict";
+// ---------- Config ----------
+const SB_URL="https://auxgkypuiiqvujbacbvy.supabase.co";
+const SB_KEY="sb_publishable_NmopGRSY8WU82P_ciex-_g_lO0aD2LQ";
+const TZ="Europe/London";
+const $=s=>document.querySelector(s);
+
+// ---------- State ----------
+const LS="cattracks.v1";
+let S={pts:[],name:"",code:"",lastSync:0,range:30,layers:{routes:true,heat:false,spots:true,range:false},base:"sat"};
+try{Object.assign(S,JSON.parse(localStorage.getItem(LS)||"{}"))}catch(e){}
+function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
+
+// ---------- Geo helpers ----------
+const R=6371000, rad=d=>d*Math.PI/180;
+function dist(a,b){const dLa=rad(b[1]-a[1]),dLo=rad(b[2]-a[2]);const x=Math.sin(dLa/2)**2+Math.cos(rad(a[1]))*Math.cos(rad(b[1]))*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(x))}
+const d2=(la1,lo1,la2,lo2)=>dist([0,la1,lo1],[0,la2,lo2]);
+function bearing(a,b){const y=Math.sin(rad(b[2]-a[2]))*Math.cos(rad(b[1]));const x=Math.cos(rad(a[1]))*Math.sin(rad(b[1]))-Math.sin(rad(a[1]))*Math.cos(rad(b[1]))*Math.cos(rad(b[2]-a[2]));return (Math.atan2(y,x)*180/Math.PI+360)%360}
+
+// ---------- Time helpers (UK time) ----------
+const fmtParts=new Intl.DateTimeFormat("en-GB",{timeZone:TZ,hour:"2-digit",minute:"2-digit",hourCycle:"h23",year:"numeric",month:"2-digit",day:"2-digit"});
+const hmCache=new Map();
+function local(t){ // t in seconds -> {day:"YYYY-MM-DD", h, m}
+  const k=Math.floor(t/60); let v=hmCache.get(k); if(v) return v;
+  const p={}; for(const x of fmtParts.formatToParts(new Date(t*1000))) p[x.type]=x.value;
+  v={day:`${p.year}-${p.month}-${p.day}`,h:+p.hour,m:+p.minute}; if(hmCache.size>50000) hmCache.clear(); hmCache.set(k,v); return v;
+}
+const fmtTime=t=>new Date(t*1000).toLocaleTimeString("en-GB",{timeZone:TZ,hour:"2-digit",minute:"2-digit"});
+const fmtDay=t=>new Date(t*1000).toLocaleDateString("en-GB",{timeZone:TZ,weekday:"short",day:"numeric",month:"short"});
+const clock=h=>{const hh=((h%24)+24)%24;const H=Math.floor(hh),M=Math.round((hh-H)*60);const d=new Date(2000,0,1,H,M);return d.toLocaleTimeString("en-GB",{hour:"numeric",minute:"2-digit",hour12:true}).replace(":00","").replace(" ","")};
+function dur(s){s=Math.round(s/60);if(s<60) return s+"m";const h=Math.floor(s/60),m=s%60;return h+"h"+(m?" "+m+"m":"")}
+function durLong(s){s=Math.round(s/60);if(s<60) return s+" min";const h=Math.floor(s/60),m=s%60;return h+" hr"+(h>1?"s":"")+(m?" "+m+" min":"")}
+const metres=m=>m>=1000?(m/1000).toFixed(1)+" km":Math.round(m)+" m";
+
+// Sunrise/sunset (NOAA approximation), returns UK local decimal hours
+function sunTimes(dateSec,lat,lon){
+  const d=new Date(dateSec*1000), J=d/86400000+2440587.5, n=Math.round(J-2451545+0.0008);
+  const Js=n-lon/360, M=(357.5291+0.98560028*Js)%360, C=1.9148*Math.sin(rad(M))+0.02*Math.sin(rad(2*M))+0.0003*Math.sin(rad(3*M));
+  const L=(M+C+180+102.9372)%360, Jt=2451545+Js+0.0053*Math.sin(rad(M))-0.0069*Math.sin(rad(2*L));
+  const dec=Math.asin(Math.sin(rad(L))*Math.sin(rad(23.44)));
+  const w=Math.acos((Math.sin(rad(-0.83))-Math.sin(rad(lat))*Math.sin(dec))/(Math.cos(rad(lat))*Math.cos(dec)))*180/Math.PI;
+  const toLocal=j=>{const t=(j-2440587.5)*86400;const l=local(t);return l.h+l.m/60};
+  return {rise:toLocal(Jt-w/360),set:toLocal(Jt+w/360)};
+}
+
+// ---------- GPX parsing ----------
+function parseGPX(text){
+  const doc=new DOMParser().parseFromString(text,"application/xml");
+  if(doc.querySelector("parsererror")) throw new Error("That file isn't valid GPX");
+  const out=[];
+  for(const p of doc.getElementsByTagName("trkpt")){
+    const lat=+p.getAttribute("lat"), lon=+p.getAttribute("lon");
+    const tn=p.getElementsByTagName("time")[0]; if(!tn||!isFinite(lat)||!isFinite(lon)) continue;
+    const t=Math.round(Date.parse(tn.textContent.trim())/1000); if(!isFinite(t)) continue;
+    const c=p.getElementsByTagName("cmt")[0]; const m=c&&/speed:\s*([\d.]+)/.exec(c.textContent);
+    out.push([t,+lat.toFixed(6),+lon.toFixed(6),m?+m[1]:null]);
+  }
+  return out;
+}
+function mergePts(a,b){const m=new Map();for(const p of a) m.set(p[0],p);for(const p of b) m.set(p[0],p);return [...m.values()].sort((x,y)=>x[0]-y[0])}
+
+// ---------- Analysis ----------
+function findHome(pts){ // Tractive snaps to one fixed coordinate while in the home zone
+  const c=new Map(); let best=null,bn=0;
+  for(const p of pts){if(p[3]!==null) continue;const k=p[1]+","+p[2];const n=(c.get(k)||0)+1;c.set(k,n);if(n>bn){bn=n;best=p}}
+  return best?[0,best[1],best[2]]:null;
+}
+function analyse(all,rangeDays){
+  const home=findHome(all); if(!home) return null;
+  const isHome=p=>p[1]===home[1]&&p[2]===home[2];
+  const now=all.length?all[all.length-1][0]:Date.now()/1000;
+  const from=rangeDays?now-rangeDays*86400:-Infinity;
+
+  // Trips: runs of away-from-home points
+  let trips=[],cur=null;
+  for(let i=0;i<all.length;i++){
+    const p=all[i];
+    if(!isHome(p)){ if(!cur) cur={pts:[]}; cur.pts.push(p); }
+    else if(cur){ cur.back=p[0]; trips.push(cur); cur=null; }
+  }
+  if(cur){cur.back=null;trips.push(cur)}
+  // Merge trips separated by a brief check-in at home (< 4 min)
+  const merged=[];
+  for(const t of trips){const l=merged[merged.length-1]; if(l&&l.back&&t.pts[0][0]-l.back<240){l.pts.push(...t.pts);l.back=t.back}else merged.push(t)}
+  trips=merged.map(t=>{
+    const pts=t.pts, start=pts[0][0], end=t.back||pts[pts.length-1][0];
+    let far=0,farP=pts[0],len=0;
+    for(let i=0;i<pts.length;i++){const d=dist(home,pts[i]);if(d>far){far=d;farP=pts[i]} if(i){const s=dist(pts[i-1],pts[i]);if(s>6) len+=s}}
+    len+=dist(home,pts[0])+(t.back?dist(pts[pts.length-1],home):0);
+    return {pts,start,end,dur:Math.max(60,end-start),far,farP,len};
+  }).filter(t=>t.far>=12||t.pts.length>=3);
+  trips=trips.filter(t=>t.start>=from);
+  const away=trips.flatMap(t=>t.pts);
+
+  // Totals
+  const total=trips.reduce((s,t)=>s+t.dur,0), lenTotal=trips.reduce((s,t)=>s+t.len,0);
+  const firstT=rangeDays?Math.max(from,all[0][0]):all[0][0];
+  const days=Math.max(1,(now-firstT)/86400);
+  const longest=trips.reduce((a,t)=>!a||t.dur>a.dur?t:a,null);
+  const furthest=trips.reduce((a,t)=>!a||t.far>a.far?t:a,null);
+
+  // Activity by hour (minutes outside per local hour, 5-min sampling)
+  const hours=new Array(24).fill(0);
+  for(const t of trips) for(let s=t.start;s<t.end;s+=300) hours[local(s).h]+=5;
+  const peakH=hours.indexOf(Math.max(...hours));
+  const sun=sunTimes(now-(Math.min(days,30)*86400)/2,home[1],home[2]);
+  let night=0,steps=0; for(const t of trips) for(let s=t.start;s<t.end;s+=300){steps++;const l=local(s),h=l.h+l.m/60; if(h<sun.rise||h>=sun.set) night++}
+  const nightPct=Math.round(night/Math.max(1,steps)*100);
+
+  // Time outside per day
+  const perDay=new Map();
+  for(const t of trips){const k=local(t.start).day;perDay.set(k,(perDay.get(k)||0)+t.dur)}
+
+  // Favourite spots: weight each away point by how long it stayed put
+  const weighted=[];
+  for(const t of trips) for(let i=0;i<t.pts.length;i++){
+    const p=t.pts[i], n=t.pts[i+1]; if(dist(home,p)<10) continue;
+    let w=60; if(n&&dist(p,n)<25) w=Math.min(n[0]-p[0],1200);
+    weighted.push({p,w,trip:t.start});
+  }
+  const RAD=18, spots=[]; const used=new Set();
+  const G=new Map(), gk=(la,lo)=>Math.floor(la/0.0002)+","+Math.floor(lo/0.0003);
+  weighted.forEach((b,j)=>{const k=gk(b.p[1],b.p[2]);(G.get(k)||G.set(k,[]).get(k)).push(j)});
+  const near=p=>{const a=Math.floor(p[1]/0.0002),o=Math.floor(p[2]/0.0003),r=[];for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++){const c=G.get((a+x)+","+(o+y));if(c) for(const j of c) if(dist(p,weighted[j].p)<RAD) r.push(j)}return r};
+  const scored=weighted.map((a,i)=>({i,s:near(a.p).reduce((s,j)=>s+weighted[j].w,0)})).sort((x,y)=>y.s-x.s);
+  for(const {i} of scored){
+    if(used.has(i)) continue;
+    const c=weighted[i].p, mem=[];
+    for(const j of near(c)) if(!used.has(j)){mem.push(weighted[j]);used.add(j)}
+    const w=mem.reduce((s,b)=>s+b.w,0); if(w<300) continue;
+    const lat=mem.reduce((s,b)=>s+b.p[1]*b.w,0)/w, lon=mem.reduce((s,b)=>s+b.p[2]*b.w,0)/w;
+    spots.push({lat,lon,w,visits:new Set(mem.map(b=>b.trip)).size,last:Math.max(...mem.map(b=>b.p[0])),fromHome:d2(home[1],home[2],lat,lon),dir:bearing(home,[0,lat,lon])});
+    if(spots.length>=6) break;
+  }
+  spots.sort((a,b)=>b.w-a.w);
+
+  // Home range: hull of the closest 95% of away points
+  const sorted=away.map(p=>({p,d:dist(home,p)})).sort((a,b)=>a.d-b.d);
+  const core=sorted.slice(0,Math.max(3,Math.floor(sorted.length*.95))).map(x=>x.p);
+  const hull=convexHull([...core,home]);
+  const area=polyArea(hull,home);
+
+  // Directions (8 sectors)
+  const dirs=new Array(8).fill(0);
+  for(const x of sorted) if(x.d>=15) dirs[Math.round(bearing(home,x.p)/45)%8]++;
+
+  return {home,trips,away,total,lenTotal,days,longest,furthest,hours,peakH,nightPct,sun,perDay,spots,hull,area,dirs,from:firstT,now};
+}
+function convexHull(ps){
+  const P=ps.map(p=>[p[2],p[1]]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]); if(P.length<3) return P.map(p=>[p[1],p[0]]);
+  const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]); const lo=[],up=[];
+  for(const p of P){while(lo.length>=2&&cr(lo[lo.length-2],lo[lo.length-1],p)<=0) lo.pop();lo.push(p)}
+  for(const p of P.slice().reverse()){while(up.length>=2&&cr(up[up.length-2],up[up.length-1],p)<=0) up.pop();up.push(p)}
+  return lo.slice(0,-1).concat(up.slice(0,-1)).map(p=>[p[1],p[0]]);
+}
+function polyArea(h,o){ if(h.length<3) return 0;
+  const xy=h.map(([la,lo])=>[rad(lo-o[2])*R*Math.cos(rad(o[1])),rad(la-o[1])*R]); let a=0;
+  for(let i=0;i<xy.length;i++){const [x1,y1]=xy[i],[x2,y2]=xy[(i+1)%xy.length];a+=x1*y2-x2*y1} return Math.abs(a)/2}
+
+// ---------- Map ----------
+let map,baseLayers={},layerGroups={},heat,tripLayer,A=null;
+function initMap(){
+  map=L.map("map",{zoomControl:false,attributionControl:true,zoomSnap:.25}).setView([52.5,-1.5],6);
+  baseLayers.sat=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:20,maxNativeZoom:19,attribution:"Imagery © Esri, Maxar, Earthstar Geographics"});
+  baseLayers.map=L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{maxZoom:20,subdomains:"abcd",attribution:"© OpenStreetMap contributors © CARTO"});
+  baseLayers[S.base].addTo(map);
+  ["routes","spots","range","home"].forEach(k=>layerGroups[k]=L.layerGroup());
+  tripLayer=L.layerGroup().addTo(map);
+}
+function drawMap(){
+  for(const k in layerGroups) layerGroups[k].clearLayers();
+  if(heat){map.removeLayer(heat);heat=null}
+  if(!A) return;
+  const {home,trips,spots,hull}=A, H=[home[1],home[2]];
+  // Routes: every trip drawn faintly, so well-used paths build up brighter
+  for(const t of trips){
+    const ll=[H,...t.pts.map(p=>[p[1],p[2]])]; if(t.end&&t.end!==t.pts[t.pts.length-1][0]) ll.push(H);
+    L.polyline(ll,{color:"#F2B53A",weight:3,opacity:Math.max(.1,Math.min(.5,6/Math.sqrt(trips.length+1))),lineJoin:"round",interactive:false}).addTo(layerGroups.routes);
+  }
+  // Heat: densify each path to ~2 m steps
+  const hp=[];
+  for(const t of trips){const ps=[[0,...H],...t.pts];for(let i=1;i<ps.length;i++){const a=ps[i-1],b=ps[i],d=dist(a,b);if(d>200) continue;const n=Math.max(1,Math.round(d/2));for(let k=0;k<n;k++){const f=k/n;hp.push([a[1]+(b[1]-a[1])*f,a[2]+(b[2]-a[2])*f,.6])}}}
+  heat=L.heatLayer(hp,{radius:14,blur:16,maxZoom:19,max:Math.max(4,hp.length/1500),gradient:{.3:"#3B3F8F",.55:"#B0569A",.75:"#F2853A",1:"#FFE7A3"}});
+  // Spots
+  spots.forEach((s,i)=>{
+    L.circle([s.lat,s.lon],{radius:14,color:"#7FC8A0",weight:1,fillColor:"#7FC8A0",fillOpacity:.15,interactive:false}).addTo(layerGroups.spots);
+    L.marker([s.lat,s.lon],{icon:L.divIcon({className:"spotpin",html:i+1,iconSize:[24,24]}),title:"Spot "+(i+1)}).addTo(layerGroups.spots);
+  });
+  // Range
+  if(hull.length>2) L.polygon(hull,{color:"#6E7BD6",weight:2,dashArray:"6 6",fillColor:"#6E7BD6",fillOpacity:.12,interactive:false}).addTo(layerGroups.range);
+  L.marker(H,{icon:L.divIcon({className:"homepin",iconSize:[16,16]}),title:"Home",zIndexOffset:1000}).addTo(layerGroups.home);
+  applyLayers(); fit();
+}
+function applyLayers(){
+  const show=!tripLayer.getLayers().length;
+  for(const k of ["routes","spots","range"]){const on=show&&S.layers[k];on?layerGroups[k].addTo(map):map.removeLayer(layerGroups[k])}
+  if(heat){show&&S.layers.heat?heat.addTo(map):map.removeLayer(heat)}
+  layerGroups.home.addTo(map);
+  document.querySelectorAll("#layers button").forEach(b=>b.setAttribute("aria-pressed",!!S.layers[b.dataset.l]));
+  document.querySelectorAll("#base button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.b===S.base));
+}
+function fit(){
+  if(!A) return; const H=[A.home[1],A.home[2]];
+  const ll=A.away.length?A.away.map(p=>[p[1],p[2]]):[H]; ll.push(H);
+  map.fitBounds(L.latLngBounds(ll).pad(.12),{maxZoom:19,paddingTopLeft:[0,40],paddingBottomRight:[0,40]});
+}
+let anim=null;
+function showTrip(t){
+  tripLayer.clearLayers(); cancelAnimationFrame(anim);
+  const H=[A.home[1],A.home[2]], ll=[H,...t.pts.map(p=>[p[1],p[2]])]; if(t.end!==t.pts[t.pts.length-1][0]) ll.push(H);
+  L.polyline(ll,{color:"#F2B53A",weight:4,opacity:.9,lineJoin:"round"}).addTo(tripLayer);
+  t.pts.forEach(p=>L.circleMarker([p[1],p[2]],{radius:3,color:"#F2B53A",weight:1,fillOpacity:1}).bindTooltip(fmtTime(p[0])).addTo(tripLayer));
+  const dot=L.marker(H,{icon:L.divIcon({className:"catdot",iconSize:[14,14]}),interactive:false}).addTo(tripLayer);
+  applyLayers();
+  map.fitBounds(L.latLngBounds(ll).pad(.25),{maxZoom:19});
+  $("#tripText").textContent=fmtDay(t.start)+", "+fmtTime(t.start)+" for "+durLong(t.dur);
+  $("#tripBanner").classList.add("on");
+  window.scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth"});
+  if(matchMedia("(prefers-reduced-motion:reduce)").matches) return;
+  // Replay: 5 s, proportional to path length
+  const seg=[];let tot=0;for(let i=1;i<ll.length;i++){const d=d2(ll[i-1][0],ll[i-1][1],ll[i][0],ll[i][1]);seg.push(d);tot+=d}
+  const t0=performance.now();
+  const step=now=>{const f=Math.min(1,(now-t0)/5000);let target=f*tot,i=0;while(i<seg.length-1&&target>seg[i]){target-=seg[i];i++}
+    const k=seg[i]?Math.min(1,target/seg[i]):1;dot.setLatLng([ll[i][0]+(ll[i+1][0]-ll[i][0])*k,ll[i][1]+(ll[i+1][1]-ll[i][1])*k]);
+    if(f<1) anim=requestAnimationFrame(step)};
+  anim=requestAnimationFrame(step);
+}
+function clearTrip(){cancelAnimationFrame(anim);tripLayer.clearLayers();$("#tripBanner").classList.remove("on");applyLayers();fit()}
+
+// ---------- Charts ----------
+const svgNS="http://www.w3.org/2000/svg";
+function clockSVG(hours,sun,peakH){
+  const W=300,c=150,r0=58,r1=132,max=Math.max(1,...hours);
+  const ang=h=>(h/24)*2*Math.PI-Math.PI/2, pt=(h,r)=>[c+r*Math.cos(ang(h)),c+r*Math.sin(ang(h))];
+  const arc=(h1,h2,ra,rb)=>{const [x1,y1]=pt(h1,rb),[x2,y2]=pt(h2,rb),[x3,y3]=pt(h2,ra),[x4,y4]=pt(h1,ra);const lg=((h2-h1+24)%24)>12?1:0;
+    return `M${x1} ${y1}A${rb} ${rb} 0 ${lg} 1 ${x2} ${y2}L${x3} ${y3}A${ra} ${ra} 0 ${lg} 0 ${x4} ${y4}Z`};
+  let s=`<svg id="clock" viewBox="0 0 ${W} ${W}" role="img" aria-label="Time outside by hour of day. Busiest around ${clock(peakH)}.">`;
+  s+=`<circle cx="${c}" cy="${c}" r="${r1+8}" fill="#252F55"/>`;
+  s+=`<path d="${arc(sun.set,sun.rise+24,r0-4,r1+8)}" fill="#0D1224"/>`;
+  for(let h=0;h<24;h++){const v=hours[h]/max;const rr=r0+(r1-r0)*Math.max(.03,v);
+    s+=`<path d="${arc(h+.08,h+.92,r0,rr)}" fill="${h===peakH?"#F2B53A":"rgba(242,181,58,"+(.25+.55*v).toFixed(2)+")"}"/>`}
+  for(const [h,l] of [[0,"12am"],[6,"6am"],[12,"12pm"],[18,"6pm"]]){const [x,y]=pt(h,r0-16);s+=`<text x="${x}" y="${y}" fill="#949AB8" font-size="11" font-family="inherit" text-anchor="middle" dominant-baseline="middle">${l}</text>`}
+  s+=`<text x="${c}" y="${c-6}" text-anchor="middle" fill="#ECE8F4" font-size="22" font-weight="800" font-family="inherit">${clock(peakH)}</text>`;
+  s+=`<text x="${c}" y="${c+14}" text-anchor="middle" fill="#949AB8" font-size="11" font-family="inherit">busiest hour</text></svg>`;
+  return s;
+}
+function daysSVG(perDay,from,now){
+  const keys=[];for(let t=from;t<=now+1;t+=86400) {const k=local(t).day;if(keys[keys.length-1]!==k) keys.push(k)}
+  const W=600,Hh=120,n=keys.length,bw=W/n,max=Math.max(1,...keys.map(k=>perDay.get(k)||0));
+  let s=`<svg id="days" viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none" role="img" aria-label="Time outside per day">`;
+  keys.forEach((k,i)=>{const v=(perDay.get(k)||0)/max;const h=Math.max(2,v*(Hh-4));s+=`<rect x="${i*bw+bw*.15}" y="${Hh-h}" width="${bw*.7}" height="${h}" rx="${Math.min(3,bw*.3)}" fill="${v?"#F2B53A":"#2B3459"}"><title>${k}: ${dur(perDay.get(k)||0)}</title></rect>`});
+  return s+"</svg>";
+}
+function compassSVG(dirs){
+  const c=66,max=Math.max(1,...dirs),labs=["N","NE","E","SE","S","SW","W","NW"];
+  let s=`<svg id="compass" viewBox="0 0 132 132" role="img" aria-label="Directions from home"><circle cx="${c}" cy="${c}" r="58" fill="none" stroke="#2B3459"/><circle cx="${c}" cy="${c}" r="29" fill="none" stroke="#2B3459" stroke-dasharray="2 3"/>`;
+  dirs.forEach((v,i)=>{const a=rad(i*45-90),a1=a-rad(17),a2=a+rad(17),r=8+50*(v/max);
+    s+=`<path d="M${c} ${c}L${c+r*Math.cos(a1)} ${c+r*Math.sin(a1)}A${r} ${r} 0 0 1 ${c+r*Math.cos(a2)} ${c+r*Math.sin(a2)}Z" fill="#6E7BD6" fill-opacity="${(.35+.65*v/max).toFixed(2)}"/>`});
+  [0,2,4,6].forEach(i=>{const a=rad(i*45-90);s+=`<text x="${c+66*Math.cos(a)*.88}" y="${c+66*Math.sin(a)*.88}" fill="#949AB8" font-size="10" text-anchor="middle" dominant-baseline="middle" font-family="inherit">${labs[i]}</text>`});
+  return s+`<circle cx="${c}" cy="${c}" r="4" fill="#F2B53A"/></svg>`;
+}
+const compassWord=b=>["north","north-east","east","south-east","south","south-west","west","north-west"][Math.round(b/45)%8];
+
+// ---------- Render ----------
+let tripShown=10;
+function render(){
+  const name=S.name||"your cat", Name=name[0].toUpperCase()+name.slice(1);
+  $("#title").textContent=S.name?S.name+"'s tracks":"Cat tracks";
+  document.title=$("#title").textContent;
+  document.querySelectorAll("#range button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.r===S.range));
+  const el=$("#content");
+  if(!S.pts.length){
+    A=null; drawMap();
+    el.innerHTML=`<div class="empty"><h2>Where does your cat go?</h2><p>Import a GPX export from Tractive to see routes, favourite spots and when they're out.</p><label class="btn" for="file">Import GPX</label></div>`;
+    updateDataInfo(); return;
+  }
+  A=analyse(S.pts,S.range); drawMap();
+  if(!A||!A.trips.length){el.innerHTML=`<div class="empty"><h2>No trips in this period</h2><p>Try a longer date range, or import a newer export.</p></div>`;updateDataInfo();return}
+  const perDayAvg=A.total/A.days, tripsPerDay=A.trips.length/A.days, nightPct=A.nightPct;
+  const fav=A.spots[0];
+  const rangeWord=S.range===7?"this week":S.range===30?"in the last 30 days":"since tracking began";
+  let lede=`${esc(Name)} went out <b>${A.trips.length} times</b> ${rangeWord}, about <b>${durLong(perDayAvg)}</b> a day. `;
+  lede+=nightPct>=50?`Mostly a night cat: ${nightPct}% of time outside is after dark.`:`Out more in daylight: only ${nightPct}% of time outside is after dark.`;
+  let h=`<p class="lede">${lede}</p>
+  <div class="stats">
+    <div class="stat"><div class="v">${(tripsPerDay).toFixed(1)}</div><div class="k">trips a day</div></div>
+    <div class="stat"><div class="v">${dur(A.total/A.trips.length)}</div><div class="k">typical trip</div></div>
+    <div class="stat"><div class="v">${metres(A.furthest.far)}</div><div class="k">furthest from home</div></div>
+    <div class="stat"><div class="v">${metres(A.lenTotal/A.days)}</div><div class="k">walked a day (approx.)</div></div>
+  </div>
+  <section><h2>When ${esc(name)} is out</h2><p class="sub">Time outside by hour, UK time. The dark band is night.</p><div class="clockrow">${clockSVG(A.hours,A.sun,A.peakH)}</div></section>`;
+  if(A.spots.length){
+    const maxW=A.spots[0].w;
+    h+=`<section><h2>Favourite spots</h2><p class="sub">Places ${esc(name)} stays still the longest. Tap to see on the map.</p>`;
+    A.spots.forEach((s,i)=>{h+=`<button class="spot" data-spot="${i}"><span class="n">${i+1}</span><span class="t"><b>${metres(s.fromHome)} ${compassWord(s.dir)} of home</b><small>${durLong(s.w)} over ${s.visits} visit${s.visits>1?"s":""}, last ${fmtDay(s.last)}</small></span><span class="bar"><i style="width:${Math.round(s.w/maxW*100)}%"></i></span></button>`});
+    h+=`</section>`;
+  }
+  const topDir=A.dirs.indexOf(Math.max(...A.dirs));
+  h+=`<section><h2>Territory</h2><div class="cmp">${compassSVG(A.dirs)}<p>Covers about <b>${A.area>=10000?(A.area/10000).toFixed(2)+" hectares":Math.round(A.area).toLocaleString("en-GB")+" m²"}</b>. Heads <b>${compassWord(topDir*45)}</b> most often.</p></div></section>`;
+  h+=`<section><h2>Time outside per day</h2><p class="sub">Longest trip: ${durLong(A.longest.dur)} on ${fmtDay(A.longest.start)}.</p>${daysSVG(A.perDay,A.from,A.now)}</section>`;
+  const list=A.trips.slice().reverse();
+  h+=`<section><h2>Trips</h2><p class="sub">Tap a trip to replay it on the map.</p>`;
+  list.slice(0,tripShown).forEach((t,i)=>{h+=`<button class="trip" data-trip="${A.trips.length-1-i}"><span class="when">${fmtDay(t.start)}, ${fmtTime(t.start)}<small>${metres(t.far)} from home, ${metres(t.len)} walked</small></span><span class="dur">${dur(t.dur)}</span></button>`});
+  if(list.length>tripShown) h+=`<button class="more" id="moreTrips">Show more trips</button>`;
+  h+=`</section>`;
+  el.innerHTML=h;
+  el.querySelectorAll("[data-spot]").forEach(b=>b.onclick=()=>{const s=A.spots[+b.dataset.spot];clearTrip();S.layers.spots=true;applyLayers();map.setView([s.lat,s.lon],19);window.scrollTo({top:0,behavior:"smooth"})});
+  el.querySelectorAll("[data-trip]").forEach(b=>b.onclick=()=>showTrip(A.trips[+b.dataset.trip]));
+  const m=$("#moreTrips"); if(m) m.onclick=()=>{tripShown+=20;render()};
+  updateDataInfo();
+}
+function updateDataInfo(){
+  const p=S.pts; $("#dataInfo").textContent=p.length?`${p.length.toLocaleString("en-GB")} points saved, ${fmtDay(p[0][0])} to ${fmtDay(p[p.length-1][0])}.`:"No data yet.";
+  renderSync();
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+// ---------- Sync (Supabase) ----------
+let syncState="idle",syncErr="";
+async function rpc(fn,body){
+  const r=await fetch(SB_URL+"/rest/v1/rpc/"+fn,{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},body:JSON.stringify(body)});
+  if(!r.ok){let d="";try{d=(await r.json()).code||""}catch(e){} throw new Error(r.status+(d?" "+d:""))}
+  const t=await r.text(); return t?JSON.parse(t):null;
+}
+async function syncNow(){
+  if(!S.code) return;
+  syncState="syncing"; renderSync();
+  try{
+    const remote=await rpc("get_cat",{p_code:S.code})||{};
+    const before=S.pts.length;
+    S.pts=mergePts(remote.pts||[],S.pts);
+    if(!S.name&&remote.name) S.name=remote.name;
+    await rpc("save_cat",{p_code:S.code,p_data:{name:S.name,pts:S.pts}});
+    S.lastSync=Date.now(); save(); syncState="ok";
+    if(S.pts.length!==before) {render();return}
+  }catch(e){syncState="error";syncErr=String(e&&e.message||e)}
+  renderSync();
+}
+const ABC="ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+function genCode(){const a=new Uint32Array(14);crypto.getRandomValues(a);return [...a].map(n=>ABC[n%ABC.length]).join("")}
+const fmtCode=c=>c.match(/.{1,4}/g).join("-");
+function joinLink(){return location.origin+location.pathname+"?join="+S.code}
+function renderSync(){
+  const c=$("#syncCard");
+  if(!S.code){
+    c.innerHTML=`<h2>Sync between phones</h2><p class="sub">Saves the data online so every phone with the link sees the same tracks.</p><div class="row"><button class="btn ghost" id="mkCode">Turn on sync</button></div>`;
+    $("#mkCode").onclick=()=>{S.code=genCode();save();syncNow();renderSync()};
+    return;
+  }
+  const st=syncState==="syncing"?"Syncing…":syncState==="error"?`Couldn't sync (${esc(syncErr)}). If this keeps happening, check the Supabase project isn't paused.`:S.lastSync?`Last synced ${new Date(S.lastSync).toLocaleString("en-GB",{timeZone:TZ,weekday:"short",hour:"2-digit",minute:"2-digit"})}`:"Not synced yet";
+  c.innerHTML=`<h2>Sync between phones</h2><p class="sub">Code <span class="code">${fmtCode(S.code)}</span></p><div class="row"><button class="btn ghost" id="share">Share join link</button><button class="btn ghost" id="syncBtn">Sync now</button></div><p class="msg${syncState==="error"?" err":""}">${st}</p>`;
+  $("#syncBtn").onclick=syncNow;
+  $("#share").onclick=async()=>{const url=joinLink();try{if(navigator.share) await navigator.share({title:"Cat tracks",url});else{await navigator.clipboard.writeText(url);$("#share").textContent="Link copied"}}catch(e){}};
+}
+
+// ---------- Events ----------
+$("#file").addEventListener("change",async e=>{
+  const files=[...e.target.files]; e.target.value=""; if(!files.length) return;
+  const msg=$("#importMsg"); msg.className="msg"; msg.textContent="Reading…";
+  try{
+    let n=0; const before=S.pts.length;
+    for(const f of files){const pts=parseGPX(await f.text());n+=pts.length;S.pts=mergePts(S.pts,pts)}
+    if(!n) throw new Error("No timestamped points found in that file");
+    save(); msg.textContent=`Imported ${n.toLocaleString("en-GB")} points, ${(S.pts.length-before).toLocaleString("en-GB")} of them new.`;
+    tripShown=10; render(); if(S.code) syncNow();
+  }catch(err){msg.className="msg err";msg.textContent=err.message||"Couldn't read that file."}
+});
+$("#range").addEventListener("click",e=>{const b=e.target.closest("button");if(!b) return;S.range=+b.dataset.r;save();clearTrip();tripShown=10;render()});
+$("#layers").addEventListener("click",e=>{const b=e.target.closest("button");if(!b) return;const l=b.dataset.l;S.layers[l]=!S.layers[l];if(l==="heat"&&S.layers.heat) S.layers.routes=false;if(l==="routes"&&S.layers.routes) S.layers.heat=false;save();applyLayers()});
+$("#base").addEventListener("click",e=>{const b=e.target.closest("button");if(!b||b.dataset.b===S.base) return;map.removeLayer(baseLayers[S.base]);S.base=b.dataset.b;baseLayers[S.base].addTo(map);save();applyLayers()});
+$("#tripClose").onclick=clearTrip;
+$("#catName").value=S.name;
+$("#catName").addEventListener("change",e=>{S.name=e.target.value.trim();save();render();if(S.code) syncNow()});
+
+// Join link
+const jp=new URLSearchParams(location.search).get("join");
+if(jp){const c=jp.toUpperCase().replace(/[^A-Z0-9]/g,"");if(c.length>=10){S.code=c;save()} history.replaceState(null,"",location.pathname)}
+
+initMap(); render();
+if(S.code) syncNow();
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&S.code) syncNow()});
+</script>
+</body>
+</html>
